@@ -32,11 +32,11 @@ def grid():
     for row in range(num_rows):
         for column in range(num_columns):
             color = white
-            if array[row][column] == 1:
+            if array[row][column] == -1:
                 color = green
-            elif array[row][column] == 2:
+            elif array[row][column] == -2:
                 color = red
-            elif array[row][column] == 3:
+            elif array[row][column] == -3:
                 color = black
             square = pygame.Rect(column * (size + 1), row * (1 + size), size, size)
             pygame.draw.rect(screen, color, square)
@@ -56,47 +56,52 @@ def find_grid_position(posX, posY):
     return calc(posX), calc(posY)
 
 
+def start_end():
+    x = event.pos[0]
+    y = event.pos[1]
+    column, row = find_grid_position(x, y)
+    if any(-2 in pos for pos in array):  # if any square is red, don't color any more squares
+        pass
+    elif any(-1 in pos for pos in array):
+        if array[row - 1][column - 1] != -1:  # if not already green, turn red
+            array[row - 1][column - 1] = -2
+            grid()
+            print('Grid position:', column, row)
+            print('- End point selected')
+    elif any(-1 in pos for pos in array) not in array:  # if no squares green, turn green
+        array[row - 1][column - 1] = -1
+        grid()
+        print('Grid position:', column, row)
+        print('- Start point selected')
+
+
+def obstacles():
+    x = event.pos[0]
+    y = event.pos[1]
+    column, row = find_grid_position(x, y)
+    if any(-2 in pos for pos in array) and any(-2 in pos for pos in array):
+        # if not already green, red, or black, turn black
+        if array[row - 1][column - 1] != -1 and array[row - 1][column - 1] != -2 and array[row - 1][column - 1] != -3:
+            array[row - 1][column - 1] = -3
+            grid()
+            print('Grid position:', column, row)
+            print('- Obstacle placed')
+
+
 # Game Loop
 running = True
 while running:
     for event in pygame.event.get():
-        # X-Button is pressed --> quit program
-        if event.type == pygame.QUIT:
+        if event.type == pygame.QUIT:  # X-Button is pressed --> quit program
             running = False
-        elif event.type == pygame.MOUSEBUTTONDOWN:
-            x = event.pos[0]
-            y = event.pos[1]
-            column, row = find_grid_position(x, y)
-            if any(2 in pos for pos in array):                # if any square is red, don't color any more squares
-                pass
-            elif any(1 in pos for pos in array):
-                if array[row - 1][column - 1] != 1:       # if not already green, turn red
-                    array[row - 1][column - 1] = 2
-                    grid()
-                    print('Grid position:', column, row)
-                    print('- End point selected')
-            elif any(1 in pos for pos in array)not in array:  # if no squares green, turn green
-                array[row - 1][column - 1] = 1
-                grid()
-                print('Grid position:', column, row)
-                print('- Start point selected')
-        # paint obstacles by holding mouse down
-        if pygame.mouse.get_pressed()[0]:
-            x = event.pos[0]
-            y = event.pos[1]
-            column, row = find_grid_position(x, y)
-            if any(2 in pos for pos in array):
-                # if end point already selected
-                if any(2 in pos for pos in array):
-                    # if not already green or red, turn black
-                    if array[row - 1][column - 1] != 1 and array[row - 1][column - 1] != 2 and array[row - 1][column - 1] != 3:
-                        array[row - 1][column - 1] = 3
-                        grid()
-                        print('Grid position:', column, row)
-                        print('- Obstacle placed')
+        elif event.type == pygame.MOUSEBUTTONDOWN:  # choose start and end point
+            start_end()
+        if pygame.mouse.get_pressed()[0]:  # paint obstacles by holding mouse down
+            obstacles()
 
     pygame.display.update()
     clock.tick(30)
 
-print(array)
+for x in array:
+    print(x)
 pygame.quit()
