@@ -1,11 +1,14 @@
 import pygame
 import math
+import time
 
 # Colors used
 white = (255, 255, 255)
 green = (0, 255, 0)
 red = (255, 0, 0)
 black = (0, 0, 0)
+blue = (0, 0, 255)
+grey = (169, 169, 169)
 
 # Initialize pygame
 pygame.init()
@@ -38,6 +41,10 @@ def grid():
                 color = red
             elif array[row][column] == -3:
                 color = black
+            elif array[row][column] == 1:
+                color = grey
+            elif array[row][column] == 2:
+                color = blue
             square = pygame.Rect(column * (size + 1), row * (1 + size), size, size)
             pygame.draw.rect(screen, color, square)
 
@@ -54,6 +61,16 @@ def find_grid_position(posX, posY):
         return math.ceil((base - x) / 40)
 
     return calc(posX), calc(posY)
+
+
+def find_start():
+    start = ()
+    for x in array:
+        try:
+            start = (array.index(x), x.index(-1))
+        except ValueError:
+            pass
+    return start
 
 
 def start_end():
@@ -75,6 +92,7 @@ def start_end():
         print('- Start point selected')
 
 
+# user-drawn obstacles
 def obstacles():
     x = event.pos[0]
     y = event.pos[1]
@@ -88,20 +106,72 @@ def obstacles():
             print('- Obstacle placed')
 
 
+def depth_first_search(start_point):  # right -> up -> left -> down
+    visited = [start_point]
+    stack = [start_point]
+    while len(stack) != 0:
+        current = stack.pop()
+        print('Current position:', current)
+
+        if current not in visited:
+            visited.append(current)
+        grid()
+        pygame.display.update()
+
+        # stack takes last element - so we add in reverse priority
+        # Down
+        if array[current[0]][current[1]] != array[-1][current[1]]:
+            if array[current[0] + 1][current[1]] == 0:
+                stack.append((current[0] + 1, current[1]))
+                print('Stack appended - Down - (', (current[0] + 1), current[1], ')')
+        # Left
+        if array[current[0]][current[1]] != array[current[0]][0]:
+            if array[current[0]][current[1] - 1] == 0:
+                stack.append((current[0], current[1] - 1))
+                print('Stack appended - Left - (', current[0], (current[1] - 1), ')')
+        # Up
+        if array[current[0]][current[1]] != array[0][current[1]]:
+            if array[current[0] - 1][current[1]] == 0:
+                stack.append((current[0] - 1, current[1]))
+                print('Stack appended - Up - (', (current[0] - 1), current[1], ')')
+        # Right
+        if array[current[0]][current[1]] != array[current[0]][-1]:
+            if array[current[0]][current[1] + 1] == 0:
+                stack.append(((current[0]), current[1] + 1))
+                print('Stack appended - Right - (', current[0], (current[1] + 1), ')')
+
+        # Recolor grid
+        for x in stack:
+            if array[x[0]][x[1]] != -1 and array[x[0]][x[1]] != -2:
+                array[x[0]][x[1]] = 1  # 1 = grey
+        for x in visited:
+            if array[x[0]][x[1]] != -1 and array[x[0]][x[1]] != -2:  # -1 = green # -2 = red
+                array[x[0]][x[1]] = 2  # 2 = blue
+
+        time.sleep(.15)
+
+
 # Game Loop
 running = True
 while running:
     for event in pygame.event.get():
         if event.type == pygame.QUIT:  # X-Button is pressed --> quit program
             running = False
+        elif event.type == pygame.KEYDOWN:
+            if event.key == pygame.K_RETURN:
+                print('Enter key pressed')
+                if find_start():
+                    start = find_start()
+                    print('- Start found', start)
+                    depth_first_search(start)
+                else:
+                    print('- Start not found')
         elif event.type == pygame.MOUSEBUTTONDOWN:  # choose start and end point
             start_end()
-        if pygame.mouse.get_pressed()[0]:  # paint obstacles by holding mouse down
+        elif pygame.mouse.get_pressed()[0]:  # paint obstacles by holding mouse down
             obstacles()
 
     pygame.display.update()
     clock.tick(30)
 
-for x in array:
-    print(x)
 pygame.quit()
