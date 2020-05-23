@@ -9,6 +9,7 @@ red = (255, 0, 0)
 black = (0, 0, 0)
 blue = (0, 0, 255)
 grey = (169, 169, 169)
+yellow = (255, 255, 0)
 
 # Initialize pygame
 pygame.init()
@@ -121,22 +122,30 @@ def depth_first_search(start_point):  # right -> up -> left -> down
         # stack takes last element - so we add in reverse priority
         # Down
         if array[current[0]][current[1]] != array[-1][current[1]]:
-            if array[current[0] + 1][current[1]] == 0:
+            if array[current[0] + 1][current[1]] == -2:
+                break
+            elif array[current[0] + 1][current[1]] == 0:
                 stack.append((current[0] + 1, current[1]))
                 print('Stack appended - Down - (', (current[0] + 1), current[1], ')')
         # Left
         if array[current[0]][current[1]] != array[current[0]][0]:
-            if array[current[0]][current[1] - 1] == 0:
+            if array[current[0]][current[1] - 1] == -2:
+                break
+            elif array[current[0]][current[1] - 1] == 0:
                 stack.append((current[0], current[1] - 1))
                 print('Stack appended - Left - (', current[0], (current[1] - 1), ')')
         # Up
         if array[current[0]][current[1]] != array[0][current[1]]:
-            if array[current[0] - 1][current[1]] == 0:
+            if array[current[0] - 1][current[1]] == -2:
+                break
+            elif array[current[0] - 1][current[1]] == 0:
                 stack.append((current[0] - 1, current[1]))
                 print('Stack appended - Up - (', (current[0] - 1), current[1], ')')
         # Right
         if array[current[0]][current[1]] != array[current[0]][-1]:
-            if array[current[0]][current[1] + 1] == 0:
+            if array[current[0]][current[1] + 1] == -2:
+                break
+            elif array[current[0]][current[1] + 1] == 0:
                 stack.append(((current[0]), current[1] + 1))
                 print('Stack appended - Right - (', current[0], (current[1] + 1), ')')
 
@@ -148,7 +157,10 @@ def depth_first_search(start_point):  # right -> up -> left -> down
             if array[x[0]][x[1]] != -1 and array[x[0]][x[1]] != -2:  # -1 = green # -2 = red
                 array[x[0]][x[1]] = 2  # 2 = blue
 
-        time.sleep(.15)
+        time.sleep(.05)
+
+    grid()
+    pygame.display.update()
 
 
 # Game Loop
