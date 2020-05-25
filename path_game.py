@@ -25,6 +25,32 @@ def grid_position(posY, posX):
     return calc(posY), calc(posX)
 
 
+def edge(array, side, node):
+    if side == 'up':
+        if array[node[0]][node[1]] == array[0][node[1]]:
+            return True
+    elif side == 'bottom':
+        if array[node[0]][node[1]] == array[-1][node[1]]:
+            return True
+    elif side == 'left':
+        if array[node[0]][node[1]] == array[node[0]][0]:
+            return True
+    elif side == 'right':
+        if array[node[0]][node[1]] == array[node[0]][-1]:
+            return True
+
+
+def adjacent_square(array, direction, node):
+    if direction == 'up':
+        return array[node[0] - 1][node[1]]
+    elif direction == 'bottom':
+        return array[node[0] + 1][node[1]]
+    elif direction == 'left':
+        return array[node[0]][node[1] - 1]
+    elif direction == 'right':
+        return array[node[0]][node[1] + 1]
+
+
 class Graph:
     def __init__(self):
         def resolution(x, y):
@@ -48,6 +74,8 @@ class Graph:
                     color = grey
                 elif self.matrix[row][col] == 2:
                     color = blue
+                elif self.matrix[row][col] == 3:
+                    color = yellow
                 square = pygame.Rect(col * (size + 1), row * (1 + size), size, size)
                 pygame.draw.rect(self.screen, color, square)
 
@@ -88,64 +116,67 @@ class Graph:
                 pass
         return start
 
+    def get_unvisited_neighbors(self, square):
+        unvisited_neighbors = []
+        # Bottom
+        if not edge(self.matrix, 'bottom', square):
+            if self.matrix[square[0] + 1][square[1]] == 0 or self.matrix[square[0] + 1][square[1]] == -2:
+                unvisited_neighbors.append((square[0] + 1, square[1]))
+        # Left
+        if not edge(self.matrix, 'left', square):
+            if self.matrix[square[0]][square[1] - 1] == 0 or self.matrix[square[0]][square[1] - 1] == -2:
+                unvisited_neighbors.append((square[0], square[1] - 1))
+        # Up
+        if not edge(self.matrix, 'up', square):
+            if self.matrix[square[0] - 1][square[1]] == 0 or self.matrix[square[0] - 1][square[1]] == -2:
+                unvisited_neighbors.append((square[0] - 1, square[1]))
+        # Right
+        if not edge(self.matrix, 'right', square):
+            if self.matrix[square[0]][square[1] + 1] == 0 or self.matrix[square[0]][square[1] + 1] == -2:
+                unvisited_neighbors.append((square[0], square[1] + 1))
+        return unvisited_neighbors
+
+    def backtrace(self, _dict_, start_child, start_point):
+        child = start_child
+        parent = 1
+        while parent is not None:
+            try:
+                parent = _dict_[child]
+                self.matrix[parent[0]][parent[1]] = 3
+                child = parent
+                time.sleep(.05)
+            except KeyError:
+                parent = None
+
+            self.draw_grid()
+            pygame.display.update()
+
+        self.matrix[start_point[0]][start_point[1]] = -1
+        self.draw_grid()
+        pygame.display.update()
+
     def depth_first_search(self, start):  # right -> up -> left -> down
         visited = [start]
         stack = [start]
+        child_parent = {}
         while len(stack) != 0:
             current = stack.pop()
             if current not in visited:
                 visited.append(current)
+
+            # update display
             self.draw_grid()
             pygame.display.update()
 
-            def edge(array, side):
-                if side == 'up':
-                    if array[current[0]][current[1]] == array[0][current[1]]:
-                        return True
-                elif side == 'bottom':
-                    if array[current[0]][current[1]] == array[-1][current[1]]:
-                        return True
-                elif side == 'left':
-                    if array[current[0]][current[1]] == array[current[0]][0]:
-                        return True
-                elif side == 'right':
-                    if array[current[0]][current[1]] == array[current[0]][-1]:
-                        return True
+            # find unvisited squares and end point
+            neighbor_squares = self.get_unvisited_neighbors(current)
+            for square in neighbor_squares:
+                child_parent[square] = current
+                if self.matrix[square[0]][square[1]] == -2:
+                    self.backtrace(child_parent, square, start)
+                    return
 
-            def adjacent_square(array, direction):
-                if direction == 'up':
-                    return array[current[0] - 1][current[1]]
-                elif direction == 'bottom':
-                    return array[current[0] + 1][current[1]]
-                elif direction == 'left':
-                    return array[current[0]][current[1] - 1]
-                elif direction == 'right':
-                    return array[current[0]][current[1] + 1]
-
-            # stack takes last element - so we add in reverse priority
-            if not edge(self.matrix, 'bottom'):
-                if adjacent_square(self.matrix, 'bottom') == -2:
-                    break
-                elif adjacent_square(self.matrix, 'bottom') == 0:
-                    stack.append((current[0] + 1, current[1]))
-
-            if not edge(self.matrix, 'left'):
-                if adjacent_square(self.matrix, 'left') == -2:
-                    break
-                elif adjacent_square(self.matrix, 'left') == 0:
-                    stack.append((current[0], current[1] - 1))
-
-            if not edge(self.matrix, 'up'):
-                if adjacent_square(self.matrix, 'up') == -2:
-                    break
-                elif adjacent_square(self.matrix, 'up') == 0:
-                    stack.append((current[0] - 1, current[1]))
-
-            if not edge(self.matrix, 'right'):
-                if adjacent_square(self.matrix, 'right') == -2:
-                    break
-                elif adjacent_square(self.matrix, 'right') == 0:
-                    stack.append((current[0], current[1] + 1))
+                stack.append(square)
 
             # Recolor grid
             for x in stack:
@@ -156,6 +187,7 @@ class Graph:
                     self.matrix[x[0]][x[1]] = 2  # 2 = blue
 
             time.sleep(.05)
+        self.draw_grid()
         pygame.display.update()
 
 
