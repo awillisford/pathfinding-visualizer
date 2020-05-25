@@ -11,179 +11,178 @@ blue = (0, 0, 255)
 grey = (169, 169, 169)
 yellow = (255, 255, 0)
 
-# Initialize pygame
-pygame.init()
-
-# Create the game window
-width = 1024
-height = 656
-screen = pygame.display.set_mode((width, height))
-size = 40
-
-# Title and Icon
-pygame.display.set_caption("Path-Finding Algorithm")
-pygame.display.set_icon(pygame.image.load('maze.png'))
-
-# Two dimensional array of 0s - used for defining color of grid squares
-array = [[0] * 25 for x in range(16)]  # 25 columns - 16 rows
-
-num_columns = 25
-num_rows = 16
+# Attributes of graph
+rows = 22
+columns = 35
+size = 30
 
 
-# Background
-def grid():
-    for row in range(num_rows):
-        for column in range(num_columns):
-            color = white
-            if array[row][column] == -1:
-                color = green
-            elif array[row][column] == -2:
-                color = red
-            elif array[row][column] == -3:
-                color = black
-            elif array[row][column] == 1:
-                color = grey
-            elif array[row][column] == 2:
-                color = blue
-            square = pygame.Rect(column * (size + 1), row * (1 + size), size, size)
-            pygame.draw.rect(screen, color, square)
+def grid_position(posY, posX):
+    def calc(pos):
+        z = math.floor(pos / size)
+        return math.ceil((pos - z) / size)
+
+    return calc(posY), calc(posX)
 
 
-grid()
+class Graph:
+    def __init__(self):
+        def resolution(x, y):
+            return ((x + 1) * y) - 1
 
-clock = pygame.time.Clock()
+        self.screen = pygame.display.set_mode((resolution(size, columns), resolution(size, rows)))  # screen size
+        self.matrix = [([0] * columns) for x in range(rows)]  # 2D array for changing grid colors
 
+    # Create game window
+    def draw_grid(self):
+        for row in range(rows):
+            for col in range(columns):
+                color = white
+                if self.matrix[row][col] == -1:
+                    color = green
+                elif self.matrix[row][col] == -2:
+                    color = red
+                elif self.matrix[row][col] == -3:
+                    color = black
+                elif self.matrix[row][col] == 1:
+                    color = grey
+                elif self.matrix[row][col] == 2:
+                    color = blue
+                square = pygame.Rect(col * (size + 1), row * (1 + size), size, size)
+                pygame.draw.rect(self.screen, color, square)
 
-# Find Grid position from mouse click
-def find_grid_position(posX, posY):
-    def calc(base):
-        x = math.floor(base / 40)
-        return math.ceil((base - x) / 40)
+    def create_start_end(self, event_pos_y, event_pos_x):
+        row, column = grid_position(event_pos_y, event_pos_x)
 
-    return calc(posX), calc(posY)
-
-
-def find_start():
-    start = ()
-    for x in array:
-        try:
-            start = (array.index(x), x.index(-1))
-        except ValueError:
+        if any(-2 in square for square in self.matrix):  # if end point selected, pass
             pass
-    return start
 
+        elif any(-1 in square for square in self.matrix):  # if start point selected already
+            if self.matrix[row - 1][column - 1] != -1:  # and selected square is not start point
+                self.matrix[row - 1][column - 1] = -2  # create end point
+                self.draw_grid()
+                print('Grid position:', row, column)
+                print('- End point selected')
 
-def start_end():
-    x = event.pos[0]
-    y = event.pos[1]
-    column, row = find_grid_position(x, y)
-    if any(-2 in pos for pos in array):  # if any square is red, don't color any more squares
-        pass
-    elif any(-1 in pos for pos in array):
-        if array[row - 1][column - 1] != -1:  # if not already green, turn red
-            array[row - 1][column - 1] = -2
-            grid()
-            print('Grid position:', column, row)
-            print('- End point selected')
-    elif any(-1 in pos for pos in array) not in array:  # if no squares green, turn green
-        array[row - 1][column - 1] = -1
-        grid()
-        print('Grid position:', column, row)
-        print('- Start point selected')
+        elif any(-1 in pos for pos in self.matrix) not in self.matrix:  # if no squares green, turn green
+            self.matrix[row - 1][column - 1] = -1
+            self.draw_grid()
+            print('Grid position:', row, column)
+            print('- Start point selected')
 
-
-# user-drawn obstacles
-def obstacles():
-    x = event.pos[0]
-    y = event.pos[1]
-    column, row = find_grid_position(x, y)
-    if any(-2 in pos for pos in array) and any(-2 in pos for pos in array):
-        # if not already green, red, or black, turn black
-        if array[row - 1][column - 1] != -1 and array[row - 1][column - 1] != -2 and array[row - 1][column - 1] != -3:
-            array[row - 1][column - 1] = -3
-            grid()
-            print('Grid position:', column, row)
-            print('- Obstacle placed')
-
-
-def depth_first_search(start_point):  # right -> up -> left -> down
-    visited = [start_point]
-    stack = [start_point]
-    while len(stack) != 0:
-        current = stack.pop()
-        print('Current position:', current)
-
-        if current not in visited:
-            visited.append(current)
-        grid()
         pygame.display.update()
 
-        # stack takes last element - so we add in reverse priority
-        # Down
-        if array[current[0]][current[1]] != array[-1][current[1]]:
-            if array[current[0] + 1][current[1]] == -2:
-                break
-            elif array[current[0] + 1][current[1]] == 0:
-                stack.append((current[0] + 1, current[1]))
-                print('Stack appended - Down - (', (current[0] + 1), current[1], ')')
-        # Left
-        if array[current[0]][current[1]] != array[current[0]][0]:
-            if array[current[0]][current[1] - 1] == -2:
-                break
-            elif array[current[0]][current[1] - 1] == 0:
-                stack.append((current[0], current[1] - 1))
-                print('Stack appended - Left - (', current[0], (current[1] - 1), ')')
-        # Up
-        if array[current[0]][current[1]] != array[0][current[1]]:
-            if array[current[0] - 1][current[1]] == -2:
-                break
-            elif array[current[0] - 1][current[1]] == 0:
-                stack.append((current[0] - 1, current[1]))
-                print('Stack appended - Up - (', (current[0] - 1), current[1], ')')
-        # Right
-        if array[current[0]][current[1]] != array[current[0]][-1]:
-            if array[current[0]][current[1] + 1] == -2:
-                break
-            elif array[current[0]][current[1] + 1] == 0:
-                stack.append(((current[0]), current[1] + 1))
-                print('Stack appended - Right - (', current[0], (current[1] + 1), ')')
+    def obstacles(self, event_pos_y, event_pos_x):
+        row, column = grid_position(event_pos_y, event_pos_x)
+        if self.matrix[row - 1][column - 1] == 0:
+            self.matrix[row - 1][column - 1] = -3
+            self.draw_grid()
+            pygame.display.update()
 
-        # Recolor grid
-        for x in stack:
-            if array[x[0]][x[1]] != -1 and array[x[0]][x[1]] != -2:
-                array[x[0]][x[1]] = 1  # 1 = grey
-        for x in visited:
-            if array[x[0]][x[1]] != -1 and array[x[0]][x[1]] != -2:  # -1 = green # -2 = red
-                array[x[0]][x[1]] = 2  # 2 = blue
+    def find_start(self):
+        start = ()
+        for x in self.matrix:
+            try:
+                start = (self.matrix.index(x), x.index(-1))
+            except ValueError:
+                pass
+        return start
 
-        time.sleep(.05)
+    def depth_first_search(self, start):  # right -> up -> left -> down
+        visited = [start]
+        stack = [start]
+        while len(stack) != 0:
+            current = stack.pop()
+            if current not in visited:
+                visited.append(current)
+            self.draw_grid()
+            pygame.display.update()
 
-    grid()
+            def edge(array, side):
+                if side == 'up':
+                    if array[current[0]][current[1]] == array[0][current[1]]:
+                        return True
+                elif side == 'bottom':
+                    if array[current[0]][current[1]] == array[-1][current[1]]:
+                        return True
+                elif side == 'left':
+                    if array[current[0]][current[1]] == array[current[0]][0]:
+                        return True
+                elif side == 'right':
+                    if array[current[0]][current[1]] == array[current[0]][-1]:
+                        return True
+
+            def adjacent_square(array, direction):
+                if direction == 'up':
+                    return array[current[0] - 1][current[1]]
+                elif direction == 'bottom':
+                    return array[current[0] + 1][current[1]]
+                elif direction == 'left':
+                    return array[current[0]][current[1] - 1]
+                elif direction == 'right':
+                    return array[current[0]][current[1] + 1]
+
+            # stack takes last element - so we add in reverse priority
+            if not edge(self.matrix, 'bottom'):
+                if adjacent_square(self.matrix, 'bottom') == -2:
+                    break
+                elif adjacent_square(self.matrix, 'bottom') == 0:
+                    stack.append((current[0] + 1, current[1]))
+
+            if not edge(self.matrix, 'left'):
+                if adjacent_square(self.matrix, 'left') == -2:
+                    break
+                elif adjacent_square(self.matrix, 'left') == 0:
+                    stack.append((current[0], current[1] - 1))
+
+            if not edge(self.matrix, 'up'):
+                if adjacent_square(self.matrix, 'up') == -2:
+                    break
+                elif adjacent_square(self.matrix, 'up') == 0:
+                    stack.append((current[0] - 1, current[1]))
+
+            if not edge(self.matrix, 'right'):
+                if adjacent_square(self.matrix, 'right') == -2:
+                    break
+                elif adjacent_square(self.matrix, 'right') == 0:
+                    stack.append((current[0], current[1] + 1))
+
+            # Recolor grid
+            for x in stack:
+                if self.matrix[x[0]][x[1]] != -1:
+                    self.matrix[x[0]][x[1]] = 1  # 1 = grey
+            for x in visited:
+                if self.matrix[x[0]][x[1]] != -1:
+                    self.matrix[x[0]][x[1]] = 2  # 2 = blue
+
+            time.sleep(.05)
+        pygame.display.update()
+
+
+def main():
+    # Initialize Game Window
+    pygame.init()
+    window = Graph()
+    window.draw_grid()
     pygame.display.update()
 
+    running = True
+    while running:
+        for event in pygame.event.get():
+            if event.type == pygame.QUIT:  # exit button pressed -> quit program
+                running = False
+            elif event.type == pygame.MOUSEBUTTONDOWN:
+                x_pos = event.pos[0]
+                y_pos = event.pos[1]
+                window.create_start_end(y_pos, x_pos)
+            elif pygame.mouse.get_pressed()[0]:
+                x_pos = event.pos[0]
+                y_pos = event.pos[1]
+                if any(-2 in square for square in window.matrix):
+                    window.obstacles(y_pos, x_pos)
+            elif event.type == pygame.KEYDOWN:
+                if event.key == pygame.K_RETURN:
+                    window.depth_first_search(window.find_start())
 
-# Game Loop
-running = True
-while running:
-    for event in pygame.event.get():
-        if event.type == pygame.QUIT:  # X-Button is pressed --> quit program
-            running = False
-        elif event.type == pygame.KEYDOWN:
-            if event.key == pygame.K_RETURN:
-                print('Enter key pressed')
-                if find_start():
-                    start = find_start()
-                    print('- Start found', start)
-                    depth_first_search(start)
-                else:
-                    print('- Start not found')
-        elif event.type == pygame.MOUSEBUTTONDOWN:  # choose start and end point
-            start_end()
-        elif pygame.mouse.get_pressed()[0]:  # paint obstacles by holding mouse down
-            obstacles()
 
-    pygame.display.update()
-    clock.tick(30)
-
-pygame.quit()
+main()
