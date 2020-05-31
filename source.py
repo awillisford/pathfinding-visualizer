@@ -3,13 +3,22 @@ import math
 import time
 
 # Colors used
-white = (255, 255, 255)
-green = (0, 255, 0)
-red = (255, 0, 0)
 black = (0, 0, 0)
-blue = (0, 0, 255)
+red = (255, 0, 0)
+green = (0, 255, 0)
+white = (255, 255, 255)
 grey = (169, 169, 169)
+blue = (0, 0, 255)
 yellow = (255, 255, 0)
+
+# Color codes used
+cc_black = -3
+cc_red = -2
+cc_green = -1
+cc_white = 0
+cc_grey = 1
+cc_blue = 2
+cc_yellow = 3
 
 # Attributes of graph
 rows = 22
@@ -20,7 +29,7 @@ size = 30
 def grid_position(posY, posX):
     def calc(pos):
         z = math.floor(pos / size)
-        return math.ceil((pos - z) / size)
+        return math.floor((pos - z) / size)
 
     return calc(posY), calc(posX)
 
@@ -82,24 +91,24 @@ class Window:
 
     def create_start_end(self, event_pos_y, event_pos_x):
         row, column = grid_position(event_pos_y, event_pos_x)
-        if any(-2 in square for square in self.matrix):  # if end point selected, pass
+        if any(cc_red in square for square in self.matrix):  # if end point selected, pass
             pass
-        elif any(-1 in square for square in self.matrix):  # if start point selected already
-            if self.matrix[row - 1][column - 1] != -1:  # and selected square is not start point
-                self.matrix[row - 1][column - 1] = -2  # create end point
+        elif any(cc_green in square for square in self.matrix):  # if start point selected already
+            if self.matrix[row][column] != cc_green:             # and selected square is not start point
+                self.matrix[row][column] = cc_red                # - create end point
                 self.draw_grid()
                 print('Grid position:', row, column)
                 print('- End point selected')
-        elif any(-1 in pos for pos in self.matrix) not in self.matrix:  # if no squares green, turn green
-            self.matrix[row - 1][column - 1] = -1
+        elif any(cc_green in pos for pos in self.matrix) not in self.matrix:  # if no squares green, turn green
+            self.matrix[row][column] = cc_green
             self.draw_grid()
             print('Grid position:', row, column)
             print('- Start point selected')
 
     def obstacles(self, event_pos_y, event_pos_x):
         row, column = grid_position(event_pos_y, event_pos_x)
-        if self.matrix[row - 1][column - 1] == 0:
-            self.matrix[row - 1][column - 1] = -3
+        if self.matrix[row][column] == cc_white:
+            self.matrix[row][column] = cc_black
             self.draw_grid()
 
     def find_start(self):
@@ -115,38 +124,37 @@ class Window:
         unvisited_neighbors = []
         # Bottom
         if not edge(self.matrix, 'bottom', square):
-            if self.matrix[square[0] + 1][square[1]] == 0 or self.matrix[square[0] + 1][square[1]] == -2:
+            if self.matrix[square[0] + 1][square[1]] == cc_white or self.matrix[square[0] + 1][square[1]] == cc_red:
                 unvisited_neighbors.append((square[0] + 1, square[1]))
         # Left
         if not edge(self.matrix, 'left', square):
-            if self.matrix[square[0]][square[1] - 1] == 0 or self.matrix[square[0]][square[1] - 1] == -2:
+            if self.matrix[square[0]][square[1] - 1] == cc_white or self.matrix[square[0]][square[1] - 1] == cc_red:
                 unvisited_neighbors.append((square[0], square[1] - 1))
         # Up
         if not edge(self.matrix, 'up', square):
-            if self.matrix[square[0] - 1][square[1]] == 0 or self.matrix[square[0] - 1][square[1]] == -2:
+            if self.matrix[square[0] - 1][square[1]] == cc_white or self.matrix[square[0] - 1][square[1]] == cc_red:
                 unvisited_neighbors.append((square[0] - 1, square[1]))
         # Right
         if not edge(self.matrix, 'right', square):
-            if self.matrix[square[0]][square[1] + 1] == 0 or self.matrix[square[0]][square[1] + 1] == -2:
+            if self.matrix[square[0]][square[1] + 1] == cc_white or self.matrix[square[0]][square[1] + 1] == cc_red:
                 unvisited_neighbors.append((square[0], square[1] + 1))
         return unvisited_neighbors
 
     def backtrace(self, _dict_, start_child, start_point):
         child = start_child
-        parent = 1
-        while parent is not None:
+        while True:
             try:
                 parent = _dict_[child]
-                self.matrix[parent[0]][parent[1]] = 3
+                self.matrix[parent[0]][parent[1]] = cc_yellow
                 child = parent
-                time.sleep(.05)
+                time.sleep(.01)
+            # if next to start
             except KeyError:
-                parent = None
+                break
 
             self.draw_grid()
-            pygame.display.update()
 
-        self.matrix[start_point[0]][start_point[1]] = -1
+        self.matrix[start_point[0]][start_point[1]] = cc_green
         self.draw_grid()
 
     def depth_first_search(self, start):  # right -> up -> left -> down
@@ -165,7 +173,7 @@ class Window:
             neighbor_squares = self.get_unvisited_neighbors(current)
             for square in neighbor_squares:
                 child_parent[square] = current
-                if self.matrix[square[0]][square[1]] == -2:
+                if self.matrix[square[0]][square[1]] == cc_red:
                     self.backtrace(child_parent, square, start)
                     return
 
@@ -173,13 +181,13 @@ class Window:
 
             # Recolor grid
             for x in stack:
-                if self.matrix[x[0]][x[1]] != -1:
-                    self.matrix[x[0]][x[1]] = 1  # 1 = grey
+                if self.matrix[x[0]][x[1]] != cc_green:  # if not start
+                    self.matrix[x[0]][x[1]] = cc_grey    # turn stack grey
             for x in visited:
-                if self.matrix[x[0]][x[1]] != -1:
-                    self.matrix[x[0]][x[1]] = 2  # 2 = blue
+                if self.matrix[x[0]][x[1]] != cc_green:  # if not start
+                    self.matrix[x[0]][x[1]] = cc_blue    # turn visited blue
 
-            time.sleep(.05)
+            time.sleep(.02)
         self.draw_grid()
 
 
@@ -189,23 +197,20 @@ def main():
     game = Window()
     game.draw_grid()
 
-    running = True
-    while running:
-        for event in pygame.event.get():
-            if event.type == pygame.QUIT:  # exit button pressed -> quit program
-                running = False
-            elif event.type == pygame.MOUSEBUTTONDOWN:
-                x_pos = event.pos[0]
-                y_pos = event.pos[1]
-                game.create_start_end(y_pos, x_pos)
-            elif pygame.mouse.get_pressed()[0]:
-                x_pos = event.pos[0]
-                y_pos = event.pos[1]
-                if any(-2 in square for square in game.matrix):
-                    game.obstacles(y_pos, x_pos)
-            elif event.type == pygame.KEYDOWN:
-                if event.key == pygame.K_RETURN:
-                    game.depth_first_search(game.find_start())
+    # Game Loop
+    while True:
+        event = pygame.event.wait()
+        if event.type == pygame.QUIT:  # exit button pressed -> quit program
+            break
+        elif pygame.mouse.get_pressed()[0]:
+            x_pos = event.pos[0]
+            y_pos = event.pos[1]
+            game.create_start_end(y_pos, x_pos)
+            if any(cc_red in square for square in game.matrix):
+                game.obstacles(y_pos, x_pos)
+        elif event.type == pygame.KEYDOWN:
+            if event.key == pygame.K_RETURN:
+                game.depth_first_search(game.find_start())
 
 
 main()
