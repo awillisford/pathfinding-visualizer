@@ -40,7 +40,7 @@ def edge(array, side, node):
             return True
 
 
-def adjacent_square(array, direction, node):
+def adjacent_color(array, direction, node):
     if direction == 'up':
         return array[node[0] - 1][node[1]]
     elif direction == 'bottom':
@@ -51,15 +51,15 @@ def adjacent_square(array, direction, node):
         return array[node[0]][node[1] + 1]
 
 
-class Graph:
+class Window:
     def __init__(self):
-        def resolution(x, y):
-            return ((x + 1) * y) - 1
+        def resolution(size_square, columns_rows):
+            return ((size_square + 1) * columns_rows) - 1
 
         self.screen = pygame.display.set_mode((resolution(size, columns), resolution(size, rows)))  # screen size
         self.matrix = [([0] * columns) for x in range(rows)]  # 2D array for changing grid colors
 
-    # Create game window
+    # Create grid inside game window
     def draw_grid(self):
         for row in range(rows):
             for col in range(columns):
@@ -78,34 +78,29 @@ class Graph:
                     color = yellow
                 square = pygame.Rect(col * (size + 1), row * (1 + size), size, size)
                 pygame.draw.rect(self.screen, color, square)
+        pygame.display.update()
 
     def create_start_end(self, event_pos_y, event_pos_x):
         row, column = grid_position(event_pos_y, event_pos_x)
-
         if any(-2 in square for square in self.matrix):  # if end point selected, pass
             pass
-
         elif any(-1 in square for square in self.matrix):  # if start point selected already
             if self.matrix[row - 1][column - 1] != -1:  # and selected square is not start point
                 self.matrix[row - 1][column - 1] = -2  # create end point
                 self.draw_grid()
                 print('Grid position:', row, column)
                 print('- End point selected')
-
         elif any(-1 in pos for pos in self.matrix) not in self.matrix:  # if no squares green, turn green
             self.matrix[row - 1][column - 1] = -1
             self.draw_grid()
             print('Grid position:', row, column)
             print('- Start point selected')
 
-        pygame.display.update()
-
     def obstacles(self, event_pos_y, event_pos_x):
         row, column = grid_position(event_pos_y, event_pos_x)
         if self.matrix[row - 1][column - 1] == 0:
             self.matrix[row - 1][column - 1] = -3
             self.draw_grid()
-            pygame.display.update()
 
     def find_start(self):
         start = ()
@@ -153,7 +148,6 @@ class Graph:
 
         self.matrix[start_point[0]][start_point[1]] = -1
         self.draw_grid()
-        pygame.display.update()
 
     def depth_first_search(self, start):  # right -> up -> left -> down
         visited = [start]
@@ -166,7 +160,6 @@ class Graph:
 
             # update display
             self.draw_grid()
-            pygame.display.update()
 
             # find unvisited squares and end point
             neighbor_squares = self.get_unvisited_neighbors(current)
@@ -188,15 +181,13 @@ class Graph:
 
             time.sleep(.05)
         self.draw_grid()
-        pygame.display.update()
 
 
 def main():
     # Initialize Game Window
     pygame.init()
-    window = Graph()
-    window.draw_grid()
-    pygame.display.update()
+    game = Window()
+    game.draw_grid()
 
     running = True
     while running:
@@ -206,15 +197,15 @@ def main():
             elif event.type == pygame.MOUSEBUTTONDOWN:
                 x_pos = event.pos[0]
                 y_pos = event.pos[1]
-                window.create_start_end(y_pos, x_pos)
+                game.create_start_end(y_pos, x_pos)
             elif pygame.mouse.get_pressed()[0]:
                 x_pos = event.pos[0]
                 y_pos = event.pos[1]
-                if any(-2 in square for square in window.matrix):
-                    window.obstacles(y_pos, x_pos)
+                if any(-2 in square for square in game.matrix):
+                    game.obstacles(y_pos, x_pos)
             elif event.type == pygame.KEYDOWN:
                 if event.key == pygame.K_RETURN:
-                    window.depth_first_search(window.find_start())
+                    game.depth_first_search(game.find_start())
 
 
 main()
