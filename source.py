@@ -121,24 +121,24 @@ class Window:
         return start
 
     def get_unvisited_neighbors(self, square):
-        unvisited_neighbors = []
+        neighbors = []
         # Bottom
         if not edge(self.matrix, 'bottom', square):
             if self.matrix[square[0] + 1][square[1]] == cc_white or self.matrix[square[0] + 1][square[1]] == cc_red:
-                unvisited_neighbors.append((square[0] + 1, square[1]))
+                neighbors.append((square[0] + 1, square[1]))
         # Left
         if not edge(self.matrix, 'left', square):
             if self.matrix[square[0]][square[1] - 1] == cc_white or self.matrix[square[0]][square[1] - 1] == cc_red:
-                unvisited_neighbors.append((square[0], square[1] - 1))
+                neighbors.append((square[0], square[1] - 1))
         # Up
         if not edge(self.matrix, 'up', square):
             if self.matrix[square[0] - 1][square[1]] == cc_white or self.matrix[square[0] - 1][square[1]] == cc_red:
-                unvisited_neighbors.append((square[0] - 1, square[1]))
+                neighbors.append((square[0] - 1, square[1]))
         # Right
         if not edge(self.matrix, 'right', square):
             if self.matrix[square[0]][square[1] + 1] == cc_white or self.matrix[square[0]][square[1] + 1] == cc_red:
-                unvisited_neighbors.append((square[0], square[1] + 1))
-        return unvisited_neighbors
+                neighbors.append((square[0], square[1] + 1))
+        return neighbors
 
     def backtrace(self, _dict_, start_child, start_point):
         child = start_child
@@ -158,12 +158,15 @@ class Window:
         self.draw_grid()
 
     def depth_first_search(self, start):  # right -> up -> left -> down
-        visited = [start]
+        visited = []
         stack = [start]
         child_parent = {}
         while len(stack) != 0:
             current = stack.pop()
-            if current not in visited:
+
+            if current in visited:
+                continue
+            else:
                 visited.append(current)
 
             # update display
@@ -176,7 +179,6 @@ class Window:
                 if self.matrix[square[0]][square[1]] == cc_red:
                     self.backtrace(child_parent, square, start)
                     return
-
                 stack.append(square)
 
             # Recolor grid
@@ -186,6 +188,41 @@ class Window:
             for x in visited:
                 if self.matrix[x[0]][x[1]] != cc_green:  # if not start
                     self.matrix[x[0]][x[1]] = cc_blue    # turn visited blue
+
+            time.sleep(.02)
+        self.draw_grid()
+
+    def breadth_first_search(self, start):
+        visited = []
+        queue = [start]
+        child_parent = {}
+        while len(queue) != 0:
+            current = queue.pop()
+
+            if current in visited:
+                continue
+            else:
+                visited.append(current)
+
+            # update display
+            self.draw_grid()
+
+            # find unvisited squares and end point
+            neighbor_squares = self.get_unvisited_neighbors(current)
+            for square in neighbor_squares:
+                child_parent[square] = current
+                if self.matrix[square[0]][square[1]] == cc_red:
+                    self.backtrace(child_parent, square, start)
+                    return
+                queue.insert(0, square)
+
+            # Recolor grid
+            for x in queue:
+                if self.matrix[x[0]][x[1]] != cc_green:  # if not start
+                    self.matrix[x[0]][x[1]] = cc_grey  # turn stack grey
+            for x in visited:
+                if self.matrix[x[0]][x[1]] != cc_green:  # if not start
+                    self.matrix[x[0]][x[1]] = cc_blue  # turn visited blue
 
             time.sleep(.02)
         self.draw_grid()
@@ -209,8 +246,10 @@ def main():
             if any(cc_red in square for square in game.matrix):
                 game.obstacles(y_pos, x_pos)
         elif event.type == pygame.KEYDOWN:
-            if event.key == pygame.K_RETURN:
+            if event.key == pygame.K_d:
                 game.depth_first_search(game.find_start())
+            elif event.key == pygame.K_b:
+                game.breadth_first_search(game.find_start())
 
 
 main()
