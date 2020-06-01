@@ -1,6 +1,7 @@
 import pygame
 import math
 import time
+from GUI import gui_settings
 
 # Colors used
 black = (0, 0, 0)
@@ -21,9 +22,10 @@ cc_blue = 2
 cc_yellow = 3
 
 # Attributes of graph
-rows = 22
-columns = 35
-size = 30
+attribute_list = gui_settings()  # from GUI file
+rows = attribute_list[1]
+columns = attribute_list[2]
+size = attribute_list[3]
 
 
 def grid_position(posY, posX):
@@ -94,8 +96,8 @@ class Window:
         if any(cc_red in square for square in self.matrix):  # if end point selected, pass
             pass
         elif any(cc_green in square for square in self.matrix):  # if start point selected already
-            if self.matrix[row][column] != cc_green:             # and selected square is not start point
-                self.matrix[row][column] = cc_red                # - create end point
+            if self.matrix[row][column] != cc_green:  # and selected square is not start point
+                self.matrix[row][column] = cc_red  # - create end point
                 self.draw_grid()
                 print('Grid position:', row, column)
                 print('- End point selected')
@@ -184,10 +186,10 @@ class Window:
             # Recolor grid
             for x in stack:
                 if self.matrix[x[0]][x[1]] != cc_green:  # if not start
-                    self.matrix[x[0]][x[1]] = cc_grey    # turn stack grey
+                    self.matrix[x[0]][x[1]] = cc_grey  # turn stack grey
             for x in visited:
                 if self.matrix[x[0]][x[1]] != cc_green:  # if not start
-                    self.matrix[x[0]][x[1]] = cc_blue    # turn visited blue
+                    self.matrix[x[0]][x[1]] = cc_blue  # turn visited blue
 
             time.sleep(.02)
         self.draw_grid()
@@ -224,7 +226,7 @@ class Window:
                 if self.matrix[x[0]][x[1]] != cc_green:  # if not start
                     self.matrix[x[0]][x[1]] = cc_blue  # turn visited blue
 
-            time.sleep(.02)
+            time.sleep(.01)
         self.draw_grid()
 
 
@@ -246,10 +248,11 @@ def main():
             if any(cc_red in square for square in game.matrix):
                 game.obstacles(y_pos, x_pos)
         elif event.type == pygame.KEYDOWN:
-            if event.key == pygame.K_d:
-                game.depth_first_search(game.find_start())
-            elif event.key == pygame.K_b:
-                game.breadth_first_search(game.find_start())
+            if event.key == pygame.K_RETURN:
+                if attribute_list[0] == 'Depth first search':
+                    game.depth_first_search(game.find_start())
+                elif attribute_list[0] == 'Breadth first search':
+                    game.breadth_first_search(game.find_start())
 
 
 main()
