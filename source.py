@@ -242,8 +242,11 @@ def main():
         if event.type == pygame.QUIT:  # exit button pressed -> quit program
             break
         elif pygame.mouse.get_pressed()[0]:
-            x_pos = event.pos[0]
-            y_pos = event.pos[1]
+            try:
+                x_pos = event.pos[0]
+                y_pos = event.pos[1]
+            except:
+                pass
             game.create_start_end(y_pos, x_pos)
             if any(cc_red in square for square in game.matrix):
                 game.obstacles(y_pos, x_pos)
@@ -254,5 +257,4 @@ def main():
                 elif attribute_list[0] == 'Breadth first search':
                     game.breadth_first_search(game.find_start())
 
-
-main()
+main() 
